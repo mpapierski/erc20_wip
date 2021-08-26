@@ -77,11 +77,36 @@ pub fn delegate(name: String, symbol: String, decimals: u8) {
 
 pub mod interface {
     use super::*;
+    use alloc::vec::Vec;
+    use alloc::vec;
+
+    fn multiple_balance_of(balances: Balances, addresses: Vec<AccountHash>) -> Vec<U256> {
+        let result = addresses
+            .iter()
+            .map(|account_hash| balances.read_balance(account_hash))
+            .collect();
+        result
+    }
 
     pub fn balance_of(owner: AccountHash) -> U256 {
         let balance = get_key(BALANCES);
-        Balances::new(balance).read_balance(&owner)
+        let single_result = multiple_balance_of(
+            Balances::new(balance),
+            vec![owner]
+        );
+        single_result[0]
     }
+
+    pub fn batch_balance_of(addresses: Vec<AccountHash>) -> Vec<U256> {
+        let balance = get_key(BALANCES);
+        multiple_balance_of(
+            Balances::new(balance),
+            addresses
+        )
+    }
+
+
+
 
     pub fn allowance(owner: AccountHash, spender: AccountHash) -> U256 {
         let allowance = get_key(ALLOWANCES);
