@@ -1,0 +1,9 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2018"
+
+[dev-dependencies]
+casper-contract = { version = "1.3.2", features = ["std"] }
+casper-types = { version = "1.3.2", features = ["std"] }
+casper-engine-test-support = "1.3.2"

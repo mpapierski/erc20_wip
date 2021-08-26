@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "erc20",
+    "contract-tests"
+]

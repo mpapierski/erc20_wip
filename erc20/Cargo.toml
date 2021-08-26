@@ -1,0 +1,13 @@
+[package]
+name = "erc20"
+version = "0.1.0"
+edition = "2018"
+
+[[bin]]
+name = "erc20"
+path = "src/bin/main.rs"
+test = false
+
+[dependencies]
+casper-contract = "1.3.2"
+casper-types = "1.3.2"

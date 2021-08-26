@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cargo",
+			"command": "build",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"args": [
+				"--target",
+				"wasm32-unknown-unknown",
+				"--package",
+				"erc20"
+			],
+			"group": "build",
+			"label": "rust: cargo build erc20 contract (debug)"
+		},
+		{
+			"type": "cargo",
+			"command": "test",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"label": "rust: cargo test",
+			"dependsOn": [
+				"rust: cargo build erc20 contract (debug)"
+			]
+		}
+	]
+}
