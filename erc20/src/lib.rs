@@ -1,27 +1,87 @@
+//! Implementation of a ERC20 Token Standard.
+#![warn(missing_docs)]
 #![no_std]
+
+#[macro_use]
+extern crate alloc;
 
 pub mod allowances;
 pub mod balances;
+pub mod constants;
+pub mod detail;
 pub mod entry_points;
 
-extern crate alloc;
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
+use constants::{ALLOWANCES_KEY, BALANCES_KEY, CONTRACT_KEY, DECIMALS_KEY, NAME_KEY, SYMBOL_KEY};
 
-use alloc::string::{String, ToString};
-use core::convert::TryInto;
+use casper_contract::{
+    contract_api::{runtime, storage},
+    unwrap_or_revert::UnwrapOrRevert,
+};
+use casper_types::{account::AccountHash, contracts::NamedKeys, Key, U512};
 
-use casper_contract::{contract_api::{runtime, storage}, unwrap_or_revert::UnwrapOrRevert};
-use casper_types::{contracts::NamedKeys, Key, CLTyped, CLValue, U256, URef};
-use casper_types::bytesrepr::{ToBytes, FromBytes};
-use casper_types::account::AccountHash;
-use crate::balances::{Balances};
-use crate::allowances::Allowances;
+/// Returns name of the token.
+pub fn name() -> String {
+    detail::read_from(NAME_KEY)
+}
 
-const NAME_KEY: &str = "name";
-const SYMBOL_KEY: &str = "symbol";
-const DECIMALS_KEY: &str = "decimals";
-const CONTRACT_KEY: &str = "contract";
-const BALANCES: &str = "balances";
-const ALLOWANCES: &str = "allowances";
+/// Returns symbol of the token.
+pub fn symbol() -> String {
+    detail::read_from(SYMBOL_KEY)
+}
+
+/// Returns decimals of the token.
+pub fn decimals() -> u8 {
+    detail::read_from(DECIMALS_KEY)
+}
+
+/// Checks balance of an owner.
+pub fn balance_of(owner: AccountHash) -> U512 {
+    balances::read_balance(&owner)
+}
+
+/// Checks balance of multiple accounts at once.
+pub fn batch_balance_of(addresses: Vec<AccountHash>) -> Vec<U512> {
+    addresses
+        .into_iter()
+        .map(|account_hash| balances::read_balance(&account_hash))
+        .collect()
+}
+
+/// Returns the amount allowed to spend.
+pub fn allowance(owner: AccountHash, spender: AccountHash) -> U512 {
+    allowances::read_allowance(&owner, &spender)
+}
+
+/// Transfer tokens from the `sender` to the `recipient`.
+pub fn transfer(sender: AccountHash, recipient: AccountHash, amount: U512) {
+    let sender_balance = balances::read_balance(&sender);
+
+    let new_sender_balance = sender_balance - amount;
+    balances::write_balance(&sender, new_sender_balance);
+
+    let new_recipient_balance = balances::read_balance(&recipient) + amount;
+    balances::write_balance(&recipient, new_recipient_balance)
+}
+
+/// Allow other address to transfer caller's tokens.
+pub fn approve(owner: AccountHash, approver: AccountHash, amount: U512) {
+    let allowance_amount = allowances::read_allowance(&owner, &approver);
+    let reduced_allowance_amount = allowance_amount - amount;
+    allowances::write_allowance(&owner, &approver, reduced_allowance_amount);
+}
+
+/// Transfer tokens from `owner` address to the `recipient` address if required `amount` was approved before to be spend by the direct caller.
+///
+/// This operation should decrement approved amount on the `owner`, and increase balance on the `recipient`.
+pub fn transfer_from(owner: AccountHash, recipient: AccountHash, amount: U512) {
+    let approver = runtime::get_caller();
+    transfer(owner, recipient, amount);
+    approve(owner, approver, amount)
+}
 
 /// This is the main entry point of the contract.
 ///
@@ -49,21 +109,24 @@ pub fn delegate(name: String, symbol: String, decimals: u8) {
         };
 
         let balances_dictionary_key = {
-            let balances_uref = storage::new_dictionary(BALANCES)
-                .unwrap_or_revert();
+            let balances_uref = storage::new_dictionary(BALANCES_KEY).unwrap_or_revert();
+            runtime::remove_key(BALANCES_KEY);
+
             Key::from(balances_uref)
         };
 
         let allowances_dictionary_key = {
-            let allowance_uref = storage::new_dictionary(ALLOWANCES).unwrap_or_revert();
+            let allowance_uref = storage::new_dictionary(ALLOWANCES_KEY).unwrap_or_revert();
+            runtime::remove_key(ALLOWANCES_KEY);
+
             Key::from(allowance_uref)
         };
 
         named_keys.insert(NAME_KEY.to_string(), name_key);
         named_keys.insert(SYMBOL_KEY.to_string(), symbol_key);
         named_keys.insert(DECIMALS_KEY.to_string(), decimals_key);
-        named_keys.insert(BALANCES.to_string(), balances_dictionary_key);
-        named_keys.insert(ALLOWANCES.to_string(), allowances_dictionary_key);
+        named_keys.insert(BALANCES_KEY.to_string(), balances_dictionary_key);
+        named_keys.insert(ALLOWANCES_KEY.to_string(), allowances_dictionary_key);
 
         named_keys
     };
@@ -74,96 +137,3 @@ pub fn delegate(name: String, symbol: String, decimals: u8) {
     // Hash of the installed contract will be reachable through named keys.
     runtime::put_key(CONTRACT_KEY, Key::from(contract_hash));
 }
-
-pub mod interface {
-    use super::*;
-    use alloc::vec::Vec;
-    use alloc::vec;
-
-    fn multiple_balance_of(balances: Balances, addresses: Vec<AccountHash>) -> Vec<U256> {
-        let result = addresses
-            .iter()
-            .map(|account_hash| balances.read_balance(account_hash))
-            .collect();
-        result
-    }
-
-    pub fn balance_of(owner: AccountHash) -> U256 {
-        let balance = get_key(BALANCES);
-        let single_result = multiple_balance_of(
-            Balances::new(balance),
-            vec![owner]
-        );
-        single_result[0]
-    }
-
-    pub fn batch_balance_of(addresses: Vec<AccountHash>) -> Vec<U256> {
-        let balance = get_key(BALANCES);
-        multiple_balance_of(
-            Balances::new(balance),
-            addresses
-        )
-    }
-
-
-
-
-    pub fn allowance(owner: AccountHash, spender: AccountHash) -> U256 {
-        let allowance = get_key(ALLOWANCES);
-        Allowances::new(allowance).read_allowances(
-            &owner,
-            &spender
-        )
-    }
-
-    pub fn transfer(sender: AccountHash, recipient: AccountHash, amount: U256) {
-        let balances_seed_uref: URef = get_key(BALANCES);
-        let balance = Balances::new(balances_seed_uref);
-        let new_sender_balance = balance.read_balance(&sender) - amount;
-        balance.write_balance(&sender, new_sender_balance);
-        let new_recipient_balance = balance.read_balance(&recipient) + amount;
-        balance.write_balance(&recipient, new_recipient_balance)
-    }
-
-    pub fn approve(owner: AccountHash, approver: AccountHash, amount: U256) {
-        let allowance_seed_uref: URef = get_key(ALLOWANCES);
-        let allowance = Allowances::new(allowance_seed_uref);
-        let reduced_allowance_amount = allowance
-            .read_allowances(&owner, &approver) - amount;
-        allowance
-            .write_allowances(&owner, &approver, reduced_allowance_amount)
-    }
-
-
-    pub fn transfer_from(owner: AccountHash, recipient: AccountHash, amount: U256) {
-        let approver = runtime::get_caller();
-        transfer(owner, recipient, amount);
-        approve(
-            owner,
-            approver,
-            amount,
-        )
-    }
-}
-
-
-
-mod utils {
-    use super::*;
-
-    pub fn get_key<T: FromBytes + CLTyped + Default>(name: &str) -> T {
-        match runtime::get_key(name) {
-            None => Default::default(),
-            Some(value) => {
-                let key = value.try_into().unwrap_or_revert();
-                storage::read(key).unwrap_or_revert().unwrap_or_revert()
-            }
-        }
-    }
-
-    pub fn ret<T: CLTyped + ToBytes>(value: T) {
-        runtime::ret(CLValue::from_t(value).unwrap_or_revert())
-    }
-}
-
-pub use utils::{get_key, ret};
