@@ -1,5 +1,5 @@
-use alloc::{vec::Vec, string::String};
 use alloc::vec;
+use alloc::{string::String, vec::Vec};
 
 use casper_types::{
     account::AccountHash, CLType, CLTyped, EntryPoint, EntryPointAccess, EntryPointType,

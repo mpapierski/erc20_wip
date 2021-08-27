@@ -4,11 +4,12 @@
 
 extern crate alloc;
 
-use alloc::string::{ToString, String};
-use casper_contract::{contract_api::runtime};
+use alloc::string::{String};
+
+use casper_contract::contract_api::runtime;
 use casper_types::{account::AccountHash, U256};
 
-use erc20::{get_key, ret, interface};
+use erc20::{get_key, interface, ret};
 
 #[no_mangle]
 pub extern "C" fn name() {
@@ -68,11 +69,14 @@ pub extern "C" fn transfer_from() {
     let owner: AccountHash = runtime::get_named_arg("owner");
     let recipient: AccountHash = runtime::get_named_arg("recipient");
     let amount: U256 = runtime::get_named_arg("amount");
-    interface::transfer_from(owner,recipient, amount)
+    interface::transfer_from(owner, recipient, amount)
 }
 
 #[no_mangle]
 fn call() {
-    // TODO: pass name, symbol and decimals as named args?
-    erc20::delegate("Token".to_string(), "TOK".to_string(), 255);
+    let name: String = runtime::get_named_arg("name");
+    let symbol: String = runtime::get_named_arg("symbol");
+    let decimals: u8 = runtime::get_named_arg("decimals");
+    let total_supply: U256 = runtime::get_named_arg("total_supply");
+    erc20::delegate(name, symbol, decimals, total_supply);
 }
