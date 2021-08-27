@@ -80,5 +80,10 @@ pub extern "C" fn transfer_from() {
 #[no_mangle]
 fn call() {
     // TODO: pass name, symbol and decimals as named args?
-    erc20::delegate("Token".to_string(), "TOK".to_string(), 255);
+    erc20::delegate(
+        "Token".to_string(),
+        "TOK".to_string(),
+        255,
+        U512::from(1_000_000),
+    );
 }

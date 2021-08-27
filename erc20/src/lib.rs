@@ -87,7 +87,7 @@ pub fn transfer_from(owner: AccountHash, recipient: AccountHash, amount: U512) {
 ///
 /// It should be called from within `fn call` of your contract.
 /// TODO: since it mentions `of your contract` we can perhaps turn `bin/main` into ./examples
-pub fn delegate(name: String, symbol: String, decimals: u8) {
+pub fn delegate(name: String, symbol: String, decimals: u8, initial_supply: U512) {
     let entry_points = entry_points::get_entry_points();
 
     let named_keys = {
@@ -110,6 +110,10 @@ pub fn delegate(name: String, symbol: String, decimals: u8) {
 
         let balances_dictionary_key = {
             let balances_uref = storage::new_dictionary(BALANCES_KEY).unwrap_or_revert();
+
+            // Sets up initial balance for the caller.
+            balances::write_balance(&runtime::get_caller(), initial_supply);
+
             runtime::remove_key(BALANCES_KEY);
 
             Key::from(balances_uref)

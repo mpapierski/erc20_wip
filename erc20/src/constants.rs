@@ -12,6 +12,8 @@ pub const CONTRACT_KEY: &str = "contract";
 pub const BALANCES_KEY: &str = "balances";
 /// Named constant of `allowances`
 pub const ALLOWANCES_KEY: &str = "allowances";
+/// Named constant of `total_supply`
+pub const TOTAL_SUPPLY_KEY: &str = "total_supply";
 
 /// Named constant for method `name`.
 pub const METHOD_NAME: &str = "name";
