@@ -1,36 +1,37 @@
+//! Implementation of allowances.
 use alloc::{format, string::String};
 
 use casper_contract::{
     contract_api::{runtime, storage},
     unwrap_or_revert::UnwrapOrRevert,
 };
-use casper_types::{account::AccountHash, URef, U256};
+use casper_types::{account::AccountHash, URef, U512};
 
-pub struct Allowances {
-    seed_uref: URef,
+use crate::{constants::ALLOWANCES_KEY, detail};
+
+fn get_allowances_uref() -> URef {
+    detail::get_uref(ALLOWANCES_KEY)
 }
 
-impl Allowances {
-    pub fn new(seed_uref: URef) -> Self {
-        Allowances {
-            seed_uref
-        }
-    }
+/// Creates a dictionary item key for a (owner, approver) pair.
+fn make_dictionary_item_key(owner: &AccountHash, approver: &AccountHash) -> String {
+    let key_string = format!("{}_{}", owner, approver);
+    let key_bytes = runtime::blake2b(key_string);
+    hex::encode(&key_bytes)
+}
 
-    pub fn write_allowances(&self, owner: &AccountHash, approver: &AccountHash, amount: U256) {
-        let dictionary_item_key = self.generate_dictionary_item_key(owner, approver);
-        storage::dictionary_put(self.seed_uref, &dictionary_item_key, amount)
-    }
+/// Writes an allowance for owner and approver for a specific amount.
+pub fn write_allowance(owner: &AccountHash, approver: &AccountHash, amount: U512) {
+    let allowance_uref = get_allowances_uref();
+    let dictionary_item_key = make_dictionary_item_key(owner, approver);
+    storage::dictionary_put(allowance_uref, &dictionary_item_key, amount)
+}
 
-    pub fn read_allowances(&self, owner: &AccountHash, approver: &AccountHash) -> U256 {
-        let dictionary_item_key = self.generate_dictionary_item_key(owner, approver);
-        storage::dictionary_get(self.seed_uref, &dictionary_item_key)
-            .unwrap_or_revert()
-            .unwrap_or_revert()
-    }
-
-    fn generate_dictionary_item_key(&self, owner: &AccountHash, approver: &AccountHash) -> String {
-        let key_string = format!("{}_{}", owner, approver);
-        hex::encode(runtime::blake2b(key_string))
-    }
+/// Reads an allowance for a owner and approver
+pub fn read_allowance(owner: &AccountHash, approver: &AccountHash) -> U512 {
+    let allowance_uref = get_allowances_uref();
+    let dictionary_item_key = make_dictionary_item_key(owner, approver);
+    storage::dictionary_get(allowance_uref, &dictionary_item_key)
+        .unwrap_or_revert()
+        .unwrap_or_revert()
 }

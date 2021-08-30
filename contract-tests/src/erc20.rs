@@ -1,7 +1,7 @@
 use hex;
 
 use casper_engine_test_support::{Code, SessionBuilder, TestContext, TestContextBuilder};
-use casper_types::{account::AccountHash, bytesrepr::FromBytes, runtime_args, AsymmetricType, CLTyped, PublicKey, RuntimeArgs, U256, U512, Key, ContractHash};
+use casper_types::{account::AccountHash, bytesrepr::FromBytes, runtime_args, AsymmetricType, CLTyped, PublicKey, RuntimeArgs, U512, Key, ContractHash};
 use blake2::{Blake2b, Digest};
 
 
@@ -20,7 +20,7 @@ pub mod token_cfg {
     pub const NAME: &str = "ERC20";
     pub const SYMBOL: &str = "ERC";
     pub const DECIMALS: u8 = 8;
-    pub fn total_supply() -> U256 {
+    pub fn total_supply() -> U512 {
         1_000.into()
     }
 }
@@ -119,15 +119,15 @@ impl Token {
         self.query_contract("decimals").unwrap()
     }
 
-    pub fn balance_of(&self, account: AccountHash) -> U256 {
+    pub fn balance_of(&self, account: AccountHash) -> U512 {
         let key = Key::Hash(self.contract_hash().value());
         let value = self
             .context
             .query_dictionary_item(key, Some("balances".to_string()), account.to_string()).unwrap();
-        value.into_t::<U256>().unwrap()
+        value.into_t::<U512>().unwrap()
     }
 
-    pub fn allowance(&self, owner: AccountHash, spender: AccountHash) -> U256 {
+    pub fn allowance(&self, owner: AccountHash, spender: AccountHash) -> U512 {
         let item_key_string = format!("{}_{}", owner, spender);
         let mut hasher = Blake2b::new();
         hasher.update(item_key_string.as_bytes());
@@ -137,11 +137,11 @@ impl Token {
             .context
             .query_dictionary_item(key, Some("allowances".to_string()), allowance_item_key)
             .unwrap()
-            .into_t::<U256>()
+            .into_t::<U512>()
             .unwrap()
     }
 
-    pub fn transfer(&mut self, recipient: AccountHash, amount: U256, sender: Sender) {
+    pub fn transfer(&mut self, recipient: AccountHash, amount: U512, sender: Sender) {
         self.call(
             sender,
             "transfer",
@@ -152,7 +152,7 @@ impl Token {
         );
     }
 
-    pub fn approve(&mut self, spender: AccountHash, amount: U256, sender: Sender) {
+    pub fn approve(&mut self, spender: AccountHash, amount: U512, sender: Sender) {
         self.call(
             sender,
             "approve",
@@ -167,7 +167,7 @@ impl Token {
         &mut self,
         owner: AccountHash,
         recipient: AccountHash,
-        amount: U256,
+        amount: U512,
         sender: Sender,
     ) {
         self.call(
