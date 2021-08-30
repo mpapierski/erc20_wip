@@ -34,4 +34,6 @@ target/
 .history
 .ionide
 
+contract-tests/wasm/erc20.wasm
+
 # End of https://www.toptal.com/developers/gitignore/api/rust,visualstudiocode
