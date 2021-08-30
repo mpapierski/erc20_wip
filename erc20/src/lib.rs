@@ -10,18 +10,21 @@ pub mod balances;
 pub mod constants;
 pub mod detail;
 pub mod entry_points;
+pub mod error;
 
 use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use constants::{ALLOWANCES_KEY, BALANCES_KEY, CONTRACT_KEY, DECIMALS_KEY, NAME_KEY, SYMBOL_KEY};
 
 use casper_contract::{
     contract_api::{runtime, storage},
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{account::AccountHash, contracts::NamedKeys, Key, U512};
+
+use constants::{ALLOWANCES_KEY, BALANCES_KEY, CONTRACT_KEY, DECIMALS_KEY, NAME_KEY, SYMBOL_KEY};
+use error::Error;
 
 /// Returns name of the token.
 pub fn name() -> String {
@@ -56,31 +59,48 @@ pub fn allowance(owner: AccountHash, spender: AccountHash) -> U512 {
     allowances::read_allowance(&owner, &spender)
 }
 
-/// Transfer tokens from the `sender` to the `recipient`.
-pub fn transfer(sender: AccountHash, recipient: AccountHash, amount: U512) {
-    let sender_balance = balances::read_balance(&sender);
+/// Transfer tokens from the caller to the `recipient`.
+pub fn transfer(recipient: AccountHash, amount: U512) -> Result<(), Error> {
+    let sender = detail::get_immediate_caller()?;
 
-    let new_sender_balance = sender_balance - amount;
-    balances::write_balance(&sender, new_sender_balance);
-
-    let new_recipient_balance = balances::read_balance(&recipient) + amount;
-    balances::write_balance(&recipient, new_recipient_balance)
+    balances::transfer_balance(sender, recipient, amount)
 }
 
 /// Allow other address to transfer caller's tokens.
-pub fn approve(owner: AccountHash, approver: AccountHash, amount: U512) {
-    let allowance_amount = allowances::read_allowance(&owner, &approver);
-    let reduced_allowance_amount = allowance_amount - amount;
-    allowances::write_allowance(&owner, &approver, reduced_allowance_amount);
+pub fn approve(spender: AccountHash, amount: U512) -> Result<(), Error> {
+    let owner = detail::get_immediate_caller()?;
+
+    if amount > balances::read_balance(&owner) {
+        return Err(Error::InsufficientBalance);
+    }
+
+    allowances::write_allowance(&owner, &spender, amount);
+
+    Ok(())
 }
 
 /// Transfer tokens from `owner` address to the `recipient` address if required `amount` was approved before to be spend by the direct caller.
 ///
 /// This operation should decrement approved amount on the `owner`, and increase balance on the `recipient`.
-pub fn transfer_from(owner: AccountHash, recipient: AccountHash, amount: U512) {
-    let approver = runtime::get_caller();
-    transfer(owner, recipient, amount);
-    approve(owner, approver, amount)
+pub fn transfer_from(
+    owner: AccountHash,
+    recipient: AccountHash,
+    amount: U512,
+) -> Result<(), Error> {
+    let spender = detail::get_immediate_caller()?;
+
+    let new_spender_allowance = {
+        let spender_allowance = allowances::read_allowance(&owner, &spender);
+        spender_allowance
+            .checked_sub(amount)
+            .ok_or(Error::InsufficientAllowance)?
+    };
+
+    balances::transfer_balance(owner, recipient, amount)?;
+
+    allowances::write_allowance(&owner, &spender, new_spender_allowance);
+
+    Ok(())
 }
 
 /// This is the main entry point of the contract.

@@ -6,9 +6,13 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
+    account::AccountHash,
     bytesrepr::{FromBytes, ToBytes},
+    system::CallStackElement,
     CLTyped, CLValue, URef,
 };
+
+use crate::error::Error;
 
 /// Shortcut for `runtime::ret`
 pub fn ret<T: CLTyped + ToBytes>(value: T) {
@@ -29,4 +33,25 @@ where
     let uref = get_uref(name);
     let value: T = storage::read(uref).unwrap_or_revert().unwrap_or_revert();
     value
+}
+
+/// Gets the immediate call stack element of the current execution.
+fn get_immediate_call_stack_item() -> Option<CallStackElement> {
+    let call_stack = runtime::get_call_stack();
+
+    let mut call_stack_iter = call_stack.into_iter().rev();
+    call_stack_iter.next()?;
+    call_stack_iter.next()
+}
+
+/// Gets the immediate caller of the current execution.
+///
+/// This function ensures that only session code can execute this function, and disallows stored session/stored contracts.
+pub fn get_immediate_caller() -> Result<AccountHash, Error> {
+    match get_immediate_call_stack_item() {
+        Some(CallStackElement::Session { account_hash }) => Ok(account_hash),
+        Some(CallStackElement::StoredSession { .. })
+        | Some(CallStackElement::StoredContract { .. })
+        | None => Err(Error::InvalidContext),
+    }
 }

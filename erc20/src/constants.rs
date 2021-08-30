@@ -31,6 +31,8 @@ pub const METHOD_ALLOWANCE: &str = "allowance";
 pub const METHOD_TRANSFER_FROM: &str = "transfer_from";
 /// Named constant for method `approve`.
 pub const METHOD_APPROVE: &str = "approve";
+/// Named constant for method `balance_of`.
+pub const METHOD_BALANCE_OF: &str = "balance_of";
 
 /// Named constant for `address`.
 pub const ARG_ADDRESS: &str = "address";
@@ -42,3 +44,11 @@ pub const ARG_SPENDER: &str = "spender";
 pub const ARG_AMOUNT: &str = "amount";
 /// Named constant for `recipient`.
 pub const ARG_RECIPIENT: &str = "recipient";
+/// Named constant for `name`.
+pub const ARG_NAME: &str = "name";
+/// Named constant for `symbol`.
+pub const ARG_SYMBOL: &str = "symbol";
+/// Named constant for `decimals`.
+pub const ARG_DECIMALS: &str = "decimals";
+/// Named constant for `total_supply`.
+pub const ARG_TOTAL_SUPPLY: &str = "total_supply";

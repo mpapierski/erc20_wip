@@ -13,25 +13,25 @@ fn get_allowances_uref() -> URef {
     detail::get_uref(ALLOWANCES_KEY)
 }
 
-/// Creates a dictionary item key for a (owner, approver) pair.
-fn make_dictionary_item_key(owner: &AccountHash, approver: &AccountHash) -> String {
-    let key_string = format!("{}_{}", owner, approver);
+/// Creates a dictionary item key for a (owner, spender) pair.
+fn make_dictionary_item_key(owner: &AccountHash, spender: &AccountHash) -> String {
+    let key_string = format!("{}_{}", owner, spender);
     let key_bytes = runtime::blake2b(key_string);
     hex::encode(&key_bytes)
 }
 
-/// Writes an allowance for owner and approver for a specific amount.
-pub fn write_allowance(owner: &AccountHash, approver: &AccountHash, amount: U512) {
+/// Writes an allowance for owner and spender for a specific amount.
+pub fn write_allowance(owner: &AccountHash, spender: &AccountHash, amount: U512) {
     let allowance_uref = get_allowances_uref();
-    let dictionary_item_key = make_dictionary_item_key(owner, approver);
+    let dictionary_item_key = make_dictionary_item_key(owner, spender);
     storage::dictionary_put(allowance_uref, &dictionary_item_key, amount)
 }
 
-/// Reads an allowance for a owner and approver
-pub fn read_allowance(owner: &AccountHash, approver: &AccountHash) -> U512 {
+/// Reads an allowance for a owner and spender
+pub fn read_allowance(owner: &AccountHash, spender: &AccountHash) -> U512 {
     let allowance_uref = get_allowances_uref();
-    let dictionary_item_key = make_dictionary_item_key(owner, approver);
+    let dictionary_item_key = make_dictionary_item_key(owner, spender);
     storage::dictionary_get(allowance_uref, &dictionary_item_key)
         .unwrap_or_revert()
-        .unwrap_or_revert()
+        .unwrap_or_default()
 }

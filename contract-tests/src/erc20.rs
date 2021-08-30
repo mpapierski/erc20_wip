@@ -1,9 +1,14 @@
 use hex;
 
+use blake2::{
+    digest::{Update, VariableOutput},
+    VarBlake2b,
+};
 use casper_engine_test_support::{Code, SessionBuilder, TestContext, TestContextBuilder};
-use casper_types::{account::AccountHash, bytesrepr::FromBytes, runtime_args, AsymmetricType, CLTyped, PublicKey, RuntimeArgs, U512, Key, ContractHash};
-use blake2::{Blake2b, Digest};
-
+use casper_types::{
+    account::AccountHash, bytesrepr::FromBytes, runtime_args, AsymmetricType, CLTyped,
+    ContractHash, Key, PublicKey, RuntimeArgs, U512,
+};
 
 const CONTRACT_KEY: &str = "contract";
 
@@ -13,7 +18,6 @@ pub mod erc20_args {
     pub const ARG_DECIMALS: &str = "decimals";
     pub const ARG_TOTAL_SUPPLY: &str = "total_supply";
 }
-
 
 pub mod token_cfg {
     use super::*;
@@ -25,6 +29,13 @@ pub mod token_cfg {
     }
 }
 
+fn blake2b256(item_key_string: String) -> Box<[u8]> {
+    let mut hasher = VarBlake2b::new(32).unwrap();
+    hasher.update(item_key_string.as_bytes());
+    hasher.finalize_boxed()
+}
+
+#[derive(Clone, Copy)]
 pub struct Sender(pub AccountHash);
 
 pub struct Token {
@@ -33,7 +44,6 @@ pub struct Token {
     pub bob: AccountHash,
     pub joe: AccountHash,
 }
-
 
 impl Token {
     pub fn deploy() -> Token {
@@ -64,7 +74,7 @@ impl Token {
             context,
             ali: ali.to_account_hash(),
             bob: bob.to_account_hash(),
-            joe: joe.to_account_hash()
+            joe: joe.to_account_hash(),
         }
     }
 
@@ -96,7 +106,6 @@ impl Token {
         }
     }
 
-
     fn call(&mut self, sender: Sender, method: &str, args: RuntimeArgs) {
         let Sender(address) = sender;
         let code = Code::Hash(self.contract_hash().value(), method.to_string());
@@ -119,26 +128,27 @@ impl Token {
         self.query_contract("decimals").unwrap()
     }
 
-    pub fn balance_of(&self, account: AccountHash) -> U512 {
+    pub fn balance_of(&self, account: AccountHash) -> Option<U512> {
         let key = Key::Hash(self.contract_hash().value());
         let value = self
             .context
-            .query_dictionary_item(key, Some("balances".to_string()), account.to_string()).unwrap();
-        value.into_t::<U512>().unwrap()
+            .query_dictionary_item(key, Some("balances".to_string()), account.to_string())
+            .ok()?;
+
+        Some(value.into_t::<U512>().unwrap())
     }
 
-    pub fn allowance(&self, owner: AccountHash, spender: AccountHash) -> U512 {
+    pub fn allowance(&self, owner: AccountHash, spender: AccountHash) -> Option<U512> {
         let item_key_string = format!("{}_{}", owner, spender);
-        let mut hasher = Blake2b::new();
-        hasher.update(item_key_string.as_bytes());
-        let allowance_item_key: String = hex::encode(hasher.finalize());
+        let allowance_item_key = hex::encode(&blake2b256(item_key_string));
         let key = Key::Hash(self.contract_hash().value());
-        self
+
+        let value = self
             .context
             .query_dictionary_item(key, Some("allowances".to_string()), allowance_item_key)
-            .unwrap()
-            .into_t::<U512>()
-            .unwrap()
+            .ok()?;
+
+        Some(value.into_t::<U512>().unwrap())
     }
 
     pub fn transfer(&mut self, recipient: AccountHash, amount: U512, sender: Sender) {
@@ -180,6 +190,4 @@ impl Token {
             },
         );
     }
-
 }
-
