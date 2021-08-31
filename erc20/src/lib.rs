@@ -54,16 +54,19 @@ pub fn batch_balance_of(addresses: Vec<AccountHash>) -> Vec<U512> {
         .collect()
 }
 
-/// Returns the amount allowed to spend.
-pub fn allowance(owner: AccountHash, spender: AccountHash) -> U512 {
-    allowances::read_allowance(&owner, &spender)
-}
-
 /// Transfer tokens from the caller to the `recipient`.
 pub fn transfer(recipient: AccountHash, amount: U512) -> Result<(), Error> {
     let sender = detail::get_immediate_caller()?;
 
     balances::transfer_balance(sender, recipient, amount)
+}
+
+/// Transfer tokens to multiple recipients.
+pub fn batch_transfer(recipient_and_amount_list: Vec<(AccountHash, U512)>) -> Result<(), Error> {
+    for (recipient, amount) in recipient_and_amount_list {
+        transfer(recipient, amount)?;
+    }
+    Ok(())
 }
 
 /// Allow other address to transfer caller's tokens.
@@ -77,6 +80,28 @@ pub fn approve(spender: AccountHash, amount: U512) -> Result<(), Error> {
     allowances::write_allowance(&owner, &spender, amount);
 
     Ok(())
+}
+
+/// Allow other address to transfer caller's tokens.
+pub fn batch_approve(spender_and_amount_list: Vec<(AccountHash, U512)>) -> Result<(), Error> {
+    for (spender, amount) in spender_and_amount_list {
+        approve(spender, amount)?;
+    }
+    Ok(())
+}
+
+/// Returns the amount allowed to spend.
+pub fn allowance(owner: AccountHash, spender: AccountHash) -> U512 {
+    allowances::read_allowance(&owner, &spender)
+}
+
+/// Returns the amounts allowed to spend for given addresses.
+/// NOTE: Is that consistent with batch_transform args?
+pub fn batch_allowance(owner_and_spender_list: Vec<(AccountHash, AccountHash)>) -> Vec<U512> {
+    owner_and_spender_list
+        .into_iter()
+        .map(|(owner, spender)| allowances::read_allowance(&owner, &spender))
+        .collect()
 }
 
 /// Transfer tokens from `owner` address to the `recipient` address if required `amount` was approved before to be spend by the direct caller.
@@ -100,6 +125,19 @@ pub fn transfer_from(
 
     allowances::write_allowance(&owner, &spender, new_spender_allowance);
 
+    Ok(())
+}
+
+/// Transfer tokens from onwer address to the multiple recipients addresses if required amount was approved before to be spend by the direct caller.
+///
+/// The operation should decrement approved amount.
+pub fn batch_transfer_from(
+    owner: AccountHash,
+    recipient_amount_list: Vec<(AccountHash, U512)>,
+) -> Result<(), Error> {
+    for (recipient, amount) in recipient_amount_list {
+        transfer_from(owner, recipient, amount)?;
+    }
     Ok(())
 }
 
