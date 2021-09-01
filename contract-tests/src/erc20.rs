@@ -29,9 +29,9 @@ pub mod token_cfg {
     }
 }
 
-fn blake2b256(item_key_string: String) -> Box<[u8]> {
+fn blake2b256(item_key_string: &[u8]) -> Box<[u8]> {
     let mut hasher = VarBlake2b::new(32).unwrap();
-    hasher.update(item_key_string.as_bytes());
+    hasher.update(item_key_string);
     hasher.finalize_boxed()
 }
 
@@ -139,8 +139,14 @@ impl Token {
     }
 
     pub fn allowance(&self, owner: AccountHash, spender: AccountHash) -> Option<U512> {
-        let item_key_string = format!("{}_{}", owner, spender);
-        let allowance_item_key = hex::encode(&blake2b256(item_key_string));
+        let mut preimage = [0; 64];
+        preimage[..32].copy_from_slice(owner.as_bytes());
+        preimage[32..].copy_from_slice(spender.as_bytes());
+        let key_bytes = blake2b256(&preimage);
+        hex::encode_to_slice(&key_bytes, &mut preimage).unwrap();
+
+        let allowance_item_key = std::str::from_utf8(&preimage).unwrap().to_string();
+
         let key = Key::Hash(self.contract_hash().value());
 
         let value = self

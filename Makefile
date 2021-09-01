@@ -1,14 +1,17 @@
+CONTRACT_TARGET_DIR       = target/wasm32-unknown-unknown/release
+
 prepare:
 	rustup target add wasm32-unknown-unknown
 
 build-contract:
 	cargo build --release -p erc20 --target wasm32-unknown-unknown
+	wasm-strip $(CONTRACT_TARGET_DIR)/erc20.wasm
 
 test-only:
 	cargo test -- tests
 
 copy-wasm-file-to-test:
-	cp target/wasm32-unknown-unknown/release/erc20.wasm contract-tests/wasm
+	cp $(CONTRACT_TARGET_DIR)/erc20.wasm contract-tests/wasm
 
 test: build-contract copy-wasm-file-to-test test-only
 

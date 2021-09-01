@@ -42,8 +42,6 @@ pub const METHOD_BATCH_TRANSFER_FROM: &str = "batch_transfer_from";
 
 /// Named constant for `address`.
 pub const ARG_ADDRESS: &str = "address";
-/// Named constant for `addresses`.
-pub const ARG_ADDRESSES: &str = "addresses";
 /// Named constant for `owner`.
 pub const ARG_OWNER: &str = "owner";
 /// Named constant for `spender`.
@@ -52,12 +50,6 @@ pub const ARG_SPENDER: &str = "spender";
 pub const ARG_AMOUNT: &str = "amount";
 /// Named constant for `recipient`.
 pub const ARG_RECIPIENT: &str = "recipient";
-/// Named constant for `recipient_and_amount_list`.
-pub const ARG_RECIPIENT_AND_AMOUNT_LIST: &str = "recipient_and_amount_list";
-/// Named constant for `spender_and_amount_list`.
-pub const ARG_SPENDER_AND_AMOUNT_LIST: &str = "spender_and_amount_list";
-/// Named constant for `owner_and_spender_list`.
-pub const ARG_OWNER_AND_SPENDER_LIST: &str = "owner_and_spender_list";
 /// Named constant for `name`.
 pub const ARG_NAME: &str = "name";
 /// Named constant for `symbol`.

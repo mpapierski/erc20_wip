@@ -2,7 +2,6 @@
 #![warn(missing_docs)]
 #![no_std]
 
-#[macro_use]
 extern crate alloc;
 
 pub mod allowances;
@@ -12,10 +11,7 @@ pub mod detail;
 pub mod entry_points;
 pub mod error;
 
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::string::{String, ToString};
 
 use casper_contract::{
     contract_api::{runtime, storage},
@@ -46,62 +42,25 @@ pub fn balance_of(owner: AccountHash) -> U512 {
     balances::read_balance(&owner)
 }
 
-/// Checks balance of multiple accounts at once.
-pub fn batch_balance_of(addresses: Vec<AccountHash>) -> Vec<U512> {
-    addresses
-        .into_iter()
-        .map(|account_hash| balances::read_balance(&account_hash))
-        .collect()
-}
-
 /// Transfer tokens from the caller to the `recipient`.
-pub fn transfer(recipient: AccountHash, amount: U512) -> Result<(), Error> {
+pub fn transfer(recipient: &AccountHash, amount: U512) -> Result<(), Error> {
     let sender = detail::get_immediate_caller()?;
 
-    balances::transfer_balance(sender, recipient, amount)
-}
-
-/// Transfer tokens to multiple recipients.
-pub fn batch_transfer(recipient_and_amount_list: Vec<(AccountHash, U512)>) -> Result<(), Error> {
-    for (recipient, amount) in recipient_and_amount_list {
-        transfer(recipient, amount)?;
-    }
-    Ok(())
+    balances::transfer_balance(&sender, recipient, amount)
 }
 
 /// Allow other address to transfer caller's tokens.
 pub fn approve(spender: AccountHash, amount: U512) -> Result<(), Error> {
     let owner = detail::get_immediate_caller()?;
 
-    if amount > balances::read_balance(&owner) {
-        return Err(Error::InsufficientBalance);
-    }
-
     allowances::write_allowance(&owner, &spender, amount);
 
-    Ok(())
-}
-
-/// Allow other address to transfer caller's tokens.
-pub fn batch_approve(spender_and_amount_list: Vec<(AccountHash, U512)>) -> Result<(), Error> {
-    for (spender, amount) in spender_and_amount_list {
-        approve(spender, amount)?;
-    }
     Ok(())
 }
 
 /// Returns the amount allowed to spend.
 pub fn allowance(owner: AccountHash, spender: AccountHash) -> U512 {
     allowances::read_allowance(&owner, &spender)
-}
-
-/// Returns the amounts allowed to spend for given addresses.
-/// NOTE: Is that consistent with batch_transform args?
-pub fn batch_allowance(owner_and_spender_list: Vec<(AccountHash, AccountHash)>) -> Vec<U512> {
-    owner_and_spender_list
-        .into_iter()
-        .map(|(owner, spender)| allowances::read_allowance(&owner, &spender))
-        .collect()
 }
 
 /// Transfer tokens from `owner` address to the `recipient` address if required `amount` was approved before to be spend by the direct caller.
@@ -121,23 +80,10 @@ pub fn transfer_from(
             .ok_or(Error::InsufficientAllowance)?
     };
 
-    balances::transfer_balance(owner, recipient, amount)?;
+    balances::transfer_balance(&owner, &recipient, amount)?;
 
     allowances::write_allowance(&owner, &spender, new_spender_allowance);
 
-    Ok(())
-}
-
-/// Transfer tokens from onwer address to the multiple recipients addresses if required amount was approved before to be spend by the direct caller.
-///
-/// The operation should decrement approved amount.
-pub fn batch_transfer_from(
-    owner: AccountHash,
-    recipient_amount_list: Vec<(AccountHash, U512)>,
-) -> Result<(), Error> {
-    for (recipient, amount) in recipient_amount_list {
-        transfer_from(owner, recipient, amount)?;
-    }
     Ok(())
 }
 
@@ -170,7 +116,7 @@ pub fn delegate(name: String, symbol: String, decimals: u8, initial_supply: U512
             let balances_uref = storage::new_dictionary(BALANCES_KEY).unwrap_or_revert();
 
             // Sets up initial balance for the caller.
-            balances::write_balance(&runtime::get_caller(), initial_supply);
+            balances::write_balance_into(balances_uref, &runtime::get_caller(), initial_supply);
 
             runtime::remove_key(BALANCES_KEY);
 

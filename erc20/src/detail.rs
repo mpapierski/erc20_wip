@@ -15,6 +15,7 @@ use casper_types::{
 use crate::error::Error;
 
 /// Shortcut for `runtime::ret`
+#[inline]
 pub fn ret<T: CLTyped + ToBytes>(value: T) {
     runtime::ret(CLValue::from_t(value).unwrap_or_revert())
 }
@@ -38,15 +39,13 @@ where
 /// Gets the immediate call stack element of the current execution.
 fn get_immediate_call_stack_item() -> Option<CallStackElement> {
     let call_stack = runtime::get_call_stack();
-
-    let mut call_stack_iter = call_stack.into_iter().rev();
-    call_stack_iter.next()?;
-    call_stack_iter.next()
+    call_stack.into_iter().rev().nth(1)
 }
 
 /// Gets the immediate caller of the current execution.
 ///
 /// This function ensures that only session code can execute this function, and disallows stored session/stored contracts.
+#[inline]
 pub fn get_immediate_caller() -> Result<AccountHash, Error> {
     match get_immediate_call_stack_item() {
         Some(CallStackElement::Session { account_hash }) => Ok(account_hash),
