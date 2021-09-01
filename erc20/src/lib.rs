@@ -10,6 +10,7 @@ pub mod constants;
 pub mod detail;
 pub mod entry_points;
 pub mod error;
+pub mod internal;
 
 use alloc::string::{String, ToString};
 
@@ -19,7 +20,10 @@ use casper_contract::{
 };
 use casper_types::{account::AccountHash, contracts::NamedKeys, Key, U512};
 
-use constants::{ALLOWANCES_KEY, BALANCES_KEY, CONTRACT_KEY, DECIMALS_KEY, NAME_KEY, SYMBOL_KEY};
+use constants::{
+    ALLOWANCES_KEY, BALANCES_KEY, CONTRACT_KEY, DECIMALS_KEY, NAME_KEY, SYMBOL_KEY,
+    TOTAL_SUPPLY_KEY,
+};
 use error::Error;
 
 /// Returns name of the token.
@@ -112,6 +116,11 @@ pub fn delegate(name: String, symbol: String, decimals: u8, initial_supply: U512
             Key::from(decimals_uref)
         };
 
+        let total_supply_key = {
+            let total_supply_uref = storage::new_uref(initial_supply).into_read();
+            Key::from(total_supply_uref)
+        };
+
         let balances_dictionary_key = {
             let balances_uref = storage::new_dictionary(BALANCES_KEY).unwrap_or_revert();
 
@@ -135,6 +144,7 @@ pub fn delegate(name: String, symbol: String, decimals: u8, initial_supply: U512
         named_keys.insert(DECIMALS_KEY.to_string(), decimals_key);
         named_keys.insert(BALANCES_KEY.to_string(), balances_dictionary_key);
         named_keys.insert(ALLOWANCES_KEY.to_string(), allowances_dictionary_key);
+        named_keys.insert(TOTAL_SUPPLY_KEY.to_string(), total_supply_key);
 
         named_keys
     };

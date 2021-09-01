@@ -11,7 +11,7 @@ use casper_types::{
 use crate::constants::{
     ARG_ADDRESS, ARG_AMOUNT, ARG_OWNER, ARG_RECIPIENT, ARG_SPENDER, METHOD_ALLOWANCE,
     METHOD_APPROVE, METHOD_BALANCE_OF, METHOD_DECIMALS, METHOD_NAME, METHOD_SYMBOL,
-    METHOD_TRANSFER, METHOD_TRANSFER_FROM,
+    METHOD_TOTAL_SUPPLY, METHOD_TRANSFER, METHOD_TRANSFER_FROM,
 };
 
 /// Returns entry points for an erc20 token.
@@ -27,7 +27,7 @@ pub fn get_entry_points() -> EntryPoints {
 
     let symbol_entry_point = EntryPoint::new(
         String::from(METHOD_SYMBOL),
-        vec![],
+        Vec::new(),
         String::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
@@ -35,8 +35,16 @@ pub fn get_entry_points() -> EntryPoints {
 
     let decimals_entry_point = EntryPoint::new(
         String::from(METHOD_DECIMALS),
-        vec![],
+        Vec::new(),
         u8::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    );
+
+    let total_supply_entry_point = EntryPoint::new(
+        String::from(METHOD_TOTAL_SUPPLY),
+        Vec::new(),
+        U512::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
     );
@@ -97,6 +105,7 @@ pub fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(name_entry_point);
     entry_points.add_entry_point(symbol_entry_point);
     entry_points.add_entry_point(decimals_entry_point);
+    entry_points.add_entry_point(total_supply_entry_point);
     entry_points.add_entry_point(balance_of_entry_point);
     entry_points.add_entry_point(transfer_entry_point);
     entry_points.add_entry_point(approve_entry_point);

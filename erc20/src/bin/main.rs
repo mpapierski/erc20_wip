@@ -7,7 +7,7 @@ extern crate alloc;
 use alloc::string::String;
 
 use casper_contract::{contract_api::runtime, unwrap_or_revert::UnwrapOrRevert};
-use casper_types::{account::AccountHash, U512};
+use casper_types::{account::AccountHash, system::mint::TOTAL_SUPPLY_KEY, U512};
 
 use erc20::{
     constants::{
@@ -32,6 +32,12 @@ pub extern "C" fn symbol() {
 #[no_mangle]
 pub extern "C" fn decimals() {
     let val: u8 = read_from(DECIMALS_KEY);
+    ret(val)
+}
+
+#[no_mangle]
+pub extern "C" fn total_supply() {
+    let val: U512 = read_from(TOTAL_SUPPLY_KEY);
     ret(val)
 }
 

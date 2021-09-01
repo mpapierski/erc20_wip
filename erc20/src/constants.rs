@@ -12,6 +12,8 @@ pub const CONTRACT_KEY: &str = "contract";
 pub const BALANCES_KEY: &str = "balances";
 /// Named constant of `allowances`
 pub const ALLOWANCES_KEY: &str = "allowances";
+/// Named constant of `total_supply`
+pub const TOTAL_SUPPLY_KEY: &str = "total_supply";
 
 /// Named constant for method `name`.
 pub const METHOD_NAME: &str = "name";
@@ -21,24 +23,16 @@ pub const METHOD_SYMBOL: &str = "symbol";
 pub const METHOD_DECIMALS: &str = "decimals";
 /// Named constant for method `balance_of`.
 pub const METHOD_BALANCE_OF: &str = "balance_of";
-/// Named constant for method `batch_balance_of`.
-pub const METHOD_BATCH_BALANCE_OF: &str = "batch_balance_of";
 /// Named constant for method `transfer`.
 pub const METHOD_TRANSFER: &str = "transfer";
-/// Named constant for method `batch_transfer`.
-pub const METHOD_BATCH_TRANSFER: &str = "batch_transfer";
 /// Named constant for method `approve`.
 pub const METHOD_APPROVE: &str = "approve";
-/// Named constant for method `approve`.
-pub const METHOD_BATCH_APPROVE: &str = "batch_approve";
 /// Named constant for method `allowance`.
 pub const METHOD_ALLOWANCE: &str = "allowance";
-/// Named constant for method `batch_allowance`.
-pub const METHOD_BATCH_ALLOWANCE: &str = "batch_allowance";
 /// Named constant for method `transfer_from`.
 pub const METHOD_TRANSFER_FROM: &str = "transfer_from";
-/// Named constant for method `batch_transfer_from`.
-pub const METHOD_BATCH_TRANSFER_FROM: &str = "batch_transfer_from";
+/// Named constant for method `total_supply`.
+pub const METHOD_TOTAL_SUPPLY: &str = "total_supply";
 
 /// Named constant for `address`.
 pub const ARG_ADDRESS: &str = "address";
