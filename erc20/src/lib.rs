@@ -95,7 +95,15 @@ pub fn transfer_from(
 ///
 /// It should be called from within `fn call` of your contract.
 /// TODO: since it mentions `of your contract` we can perhaps turn `bin/main` into ./examples
-pub fn delegate(name: String, symbol: String, decimals: u8, initial_supply: U512) {
+pub fn delegate(
+    name: String,
+    symbol: String,
+    decimals: u8,
+    initial_supply: U512,
+) -> Result<(), Error> {
+    // Only a session code can call into this, and attempt to call this function from within stored contracts of any type will raise an error.
+    detail::requires_session_code()?;
+
     let entry_points = entry_points::get_entry_points();
 
     let named_keys = {
@@ -154,4 +162,6 @@ pub fn delegate(name: String, symbol: String, decimals: u8, initial_supply: U512
 
     // Hash of the installed contract will be reachable through named keys.
     runtime::put_key(CONTRACT_KEY, Key::from(contract_hash));
+
+    Ok(())
 }

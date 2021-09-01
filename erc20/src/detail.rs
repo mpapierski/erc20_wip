@@ -54,3 +54,18 @@ pub fn get_immediate_caller() -> Result<AccountHash, Error> {
         | None => Err(Error::InvalidContext),
     }
 }
+
+/// This function makes sure that the contract is called directly through a deploy.
+///
+/// An attempt to call this function from within a stored contract will fail with [`Error::InvalidContext`].
+#[inline]
+pub fn requires_session_code() -> Result<(), Error> {
+    let call_stack = runtime::get_call_stack();
+
+    if let Some(CallStackElement::Session { .. }) = call_stack.into_iter().rev().next() {
+        // Only session code is allowed
+        Ok(())
+    } else {
+        Err(Error::InvalidContext)
+    }
+}

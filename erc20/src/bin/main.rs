@@ -87,5 +87,5 @@ fn call() {
     let decimals = runtime::get_named_arg(ARG_DECIMALS);
     let total_supply = runtime::get_named_arg(ARG_TOTAL_SUPPLY);
 
-    erc20::delegate(name, symbol, decimals, total_supply);
+    erc20::delegate(name, symbol, decimals, total_supply).unwrap_or_revert();
 }
